@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mounjaro® Dosing Steady-State Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .disclaimer {
+            border-left: 4px solid #f59e0b; /* amber-500 */
+            background-color: #fffbeb; /* amber-50 */
+            color: #b45309; /* amber-700 */
+        }
+        /* Custom slider styles */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 8px;
+            cursor: pointer;
+            background: #e5e7eb; /* gray-200 */
+            border-radius: 5px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #4f46e5; /* indigo-600 */
+            cursor: pointer;
+            margin-top: -6px; /* Center thumb on track */
+        }
+        input[type=range]::-moz-range-track {
+            width: 100%;
+            height: 8px;
+            cursor: pointer;
+            background: #e5e7eb;
+            border-radius: 5px;
+        }
+        input[type=range]::-moz-range-thumb {
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #4f46e5;
+            cursor: pointer;
+            border: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Mounjaro® Dosing Steady-State Calculator</h1>
+            <p class="text-gray-600 mt-2">Visualize Mounjaro® (Tirzepatide) levels over time.</p>
+        </header>
+
+        <!-- Disclaimer -->
+        <div class="disclaimer p-4 rounded-md mb-8" role="alert">
+            <h3 class="font-bold text-lg">Important Medical Disclaimer</h3>
+            <p class="mt-1">This tool is for educational and informational purposes ONLY. It is a simplified model and does not represent real physiological processes. The results are not medical advice. <strong class="font-semibold">ALWAYS consult with a qualified healthcare professional</strong> before making any decisions about your medication or treatment plan. Do not use this tool to self-medicate or adjust your dosage.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Controls -->
+            <div class="md:col-span-1 bg-white p-6 rounded-2xl shadow-lg">
+                <h2 class="text-xl font-bold mb-4 border-b pb-2">Simulation Controls</h2>
+                <div id="calculator-controls" class="space-y-6">
+                    <div>
+                        <label for="dose-amount" class="block text-sm font-medium text-gray-700">Dose Amount: <span id="dose-amount-value" class="font-bold">2.5 mg</span></label>
+                        <input type="range" id="dose-amount" min="1" max="15" value="2.5" step="0.1" class="mt-2 w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div>
+                        <label for="dose-interval" class="block text-sm font-medium text-gray-700">Dosing Interval: <span id="dose-interval-value" class="font-bold">7 days</span></label>
+                        <input type="range" id="dose-interval" min="1" max="14" value="7" step="1" class="mt-2 w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div>
+                        <label for="simulation-days" class="block text-sm font-medium text-gray-700">Simulation Length (days)</label>
+                        <input type="number" id="simulation-days" value="60" step="1" min="30" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                    </div>
+                    <div class="text-xs text-gray-500 pt-2 border-t">
+                        <p><strong>Model Parameters (Mounjaro®):</strong></p>
+                        <p>Elimination Half-Life: 5 days</p>
+                        <p>Absorption Rate: ~50% of depot/day</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results and Chart -->
+            <div class="md:col-span-2 bg-white p-6 rounded-2xl shadow-lg">
+                <div class="mb-6">
+                    <h2 class="text-xl font-bold mb-4 border-b pb-2">Steady-State Results</h2>
+                    <div id="results" class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-center">
+                        <div>
+                            <p class="text-sm text-gray-500">Peak Level</p>
+                            <p id="peak-level" class="text-2xl font-bold text-green-600">- mg</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Trough Level</p>
+                            <p id="trough-level" class="text-2xl font-bold text-red-600">- mg</p>
+                        </div>
+                        <div class="col-span-2 sm:col-span-1">
+                            <p class="text-sm text-gray-500">Average Level</p>
+                            <p id="average-level" class="text-2xl font-bold text-blue-600">- mg</p>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <canvas id="concentration-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Explanations Section -->
+        <div class="mt-8 space-y-8">
+            <div class="bg-white p-6 rounded-2xl shadow-lg">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800">How to Use This Tool</h2>
+                <div class="space-y-4 text-gray-700">
+                    <p>This calculator helps you visualize how different Mounjaro® dosing strategies might affect the total amount of the drug in your system over time. Simply adjust the sliders and inputs to see the chart update in real-time.</p>
+                    <ul class="list-disc list-inside space-y-2">
+                        <li><strong>Dose Amount:</strong> Use the slider to set the amount (in mg) of each individual dose.</li>
+                        <li><strong>Dosing Interval:</strong> Use the slider to set the number of days between each dose.</li>
+                        <li><strong>Simulation Length:</strong> Set the total number of days you want the simulation to run for. A longer period (like 60-90 days) is better for seeing the drug reach a "steady state."</li>
+                    </ul>
+                    <p>The <strong>Steady-State Results</strong> show the peak (highest), trough (lowest), and average drug levels achieved during the last full dosing cycle of the simulation, which is when the drug levels have stabilized.</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-lg">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800">How the Calculation Works</h2>
+                <div class="space-y-4 text-gray-700">
+                    <p>This tool uses a simplified pharmacokinetic model that runs a day-by-day simulation. It tracks two main things: the amount of Mounjaro® at the injection site (the "depot") and the amount of drug active in your body (the "system").</p>
+                    <p>Every day, the simulation performs these steps in order:</p>
+                    <ol class="list-decimal list-inside space-y-2">
+                        <li><strong>Dosing:</strong> If it's a scheduled dosing day, the full dose amount is added to the depot at the injection site.</li>
+                        <li><strong>Absorption:</strong> A fixed percentage of the drug in the depot is moved into the system. This creates a smoother, more realistic absorption curve instead of an instant spike.</li>
+                        <li><strong>Elimination:</strong> A portion of the drug in the system is eliminated, based on the drug's half-life.</li>
+                    </ol>
+                    <h3 class="text-lg font-semibold pt-2">Key Assumptions</h3>
+                    <p>To keep the model simple, several assumptions are made:</p>
+                    <ul class="list-disc list-inside space-y-2">
+                        <li><strong>Fixed Half-Life:</strong> The elimination half-life is fixed at 5 days, based on clinical data for Mounjaro® (Tirzepatide).</li>
+                        <li><strong>Fixed Absorption Rate:</strong> The model assumes about 50% of the drug at the injection site is absorbed each day. This is an estimate designed to mimic a peak concentration a few days after injection.</li>
+                        <li><strong>One-Compartment Model:</strong> The calculator treats the body as a single, simple system. It doesn't account for how the drug is distributed to different tissues or organs.</li>
+                        <li><strong>No Individual Variation:</strong> The simulation does not account for individual factors like body weight, metabolism, or organ function, which can all affect drug levels in the real world.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- DOM Element References ---
+        const doseAmountSlider = document.getElementById('dose-amount');
+        const doseIntervalSlider = document.getElementById('dose-interval');
+        const simulationDaysInput = document.getElementById('simulation-days');
+        
+        const doseAmountValueEl = document.getElementById('dose-amount-value');
+        const doseIntervalValueEl = document.getElementById('dose-interval-value');
+        
+        const peakLevelEl = document.getElementById('peak-level');
+        const troughLevelEl = document.getElementById('trough-level');
+        const averageLevelEl = document.getElementById('average-level');
+        
+        const ctx = document.getElementById('concentration-chart').getContext('2d');
+        let concentrationChart;
+
+        // --- Main Calculation Logic ---
+        function runSimulation() {
+            // Get inputs from controls
+            const doseAmount = parseFloat(doseAmountSlider.value);
+            const doseInterval = parseInt(doseIntervalSlider.value);
+            const simulationDays = parseInt(simulationDaysInput.value);
+            
+            // --- Hard-coded Pharmacokinetic Parameters ---
+            const eliminationHalfLife = 5; // days
+            // This rate aims to have the peak concentration ~2 days after injection
+            const dailyAbsorptionFraction = 0.5; // 50% of the remaining drug at the injection site is absorbed each day
+
+            // Validate inputs
+            if (isNaN(doseAmount) || isNaN(doseInterval) || isNaN(simulationDays) || doseAmount <= 0 || doseInterval <= 0 || simulationDays <= 0) {
+                return;
+            }
+            
+            // The decay factor for drug ELIMINATION from the system
+            const dailyDecayFactor = Math.pow(0.5, 1 / eliminationHalfLife);
+
+            let depotMass = 0; // Drug at the injection site, waiting to be absorbed
+            let systemMass = 0; // Drug active in the system
+            
+            const systemMassData = [];
+            const labels = [];
+
+            // --- Simulation Loop ---
+            // The value for a given day represents the state at the START of that day.
+            for (let day = 0; day <= simulationDays; day++) {
+                // 1. Store the current system mass for the chart. This ensures Day 0 starts at 0.
+                labels.push(`Day ${day}`);
+                systemMassData.push(systemMass);
+
+                // 2. Add new dose to the depot on dosing days
+                if (day > 0 && day % doseInterval === 0) { // Start dosing on the first interval, not day 0
+                    depotMass += doseAmount;
+                }
+                if (day === 0) { // First dose on day 0
+                    depotMass += doseAmount;
+                }
+
+
+                // 3. Absorb drug from depot into the system
+                const absorbedAmount = depotMass * dailyAbsorptionFraction;
+                depotMass -= absorbedAmount;
+                systemMass += absorbedAmount;
+
+                // 4. Eliminate drug from the system
+                systemMass *= dailyDecayFactor;
+            }
+            
+            // --- Calculate Steady-State Metrics ---
+            // We assume steady state is reached in the last full dosing cycle
+            const lastDoseDay = Math.floor((simulationDays - 1) / doseInterval) * doseInterval;
+            
+            if (lastDoseDay > doseInterval) { // Ensure we have at least one full previous cycle
+                const steadyStateStartIndex = lastDoseDay - doseInterval;
+                // We use slice(start, end + 1) to include the last day of the cycle for accurate peak/trough
+                const lastFullCycleData = systemMassData.slice(steadyStateStartIndex, lastDoseDay + 1);
+
+                const peak = Math.max(...lastFullCycleData);
+                const trough = Math.min(...lastFullCycleData);
+                const average = lastFullCycleData.reduce((a, b) => a + b, 0) / lastFullCycleData.length;
+
+                updateResults(peak, trough, average);
+            } else {
+                 // Not enough data for a steady-state calculation
+                 updateResults(0, 0, 0);
+            }
+
+            updateChart(labels, systemMassData);
+        }
+
+        // --- Update UI Elements ---
+        function updateResults(peak, trough, average) {
+            peakLevelEl.textContent = `${peak.toFixed(2)} mg`;
+            troughLevelEl.textContent = `${trough.toFixed(2)} mg`;
+            averageLevelEl.textContent = `${average.toFixed(2)} mg`;
+        }
+
+        function updateChart(labels, data) {
+            if (concentrationChart) {
+                concentrationChart.destroy();
+            }
+            concentrationChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total Drug in System (mg)',
+                        data: data,
+                        borderColor: 'rgb(79, 70, 229)',
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        tension: 0.1,
+                        fill: true,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Total Drug in System (mg)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time (Days)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    animation: {
+                        duration: 0 // Disable animation for real-time updates
+                    }
+                }
+            });
+        }
+        
+        function updateSliderLabels() {
+            doseAmountValueEl.textContent = `${parseFloat(doseAmountSlider.value).toFixed(1)} mg`;
+            doseIntervalValueEl.textContent = `${doseIntervalSlider.value} days`;
+        }
+
+        // --- Event Listeners ---
+        doseAmountSlider.addEventListener('input', () => {
+            updateSliderLabels();
+            runSimulation();
+        });
+
+        doseIntervalSlider.addEventListener('input', () => {
+            updateSliderLabels();
+            runSimulation();
+        });
+        
+        simulationDaysInput.addEventListener('change', runSimulation);
+
+        // --- Initial Setup ---
+        window.onload = () => {
+            updateSliderLabels();
+            runSimulation();
+        };
+
+    </script>
+</body>
+</html>
