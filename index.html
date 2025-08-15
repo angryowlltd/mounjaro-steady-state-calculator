@@ -73,33 +73,11 @@
             <p class="mt-1">This tool is for educational and informational purposes ONLY. It is a simplified model and does not represent real physiological processes. The results are not medical advice. <strong class="font-semibold">ALWAYS consult with a qualified healthcare professional</strong> before making any decisions about your medication or treatment plan. Do not use this tool to self-medicate or adjust your dosage.</p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <!-- Controls -->
-            <div class="md:col-span-1 bg-white p-6 rounded-2xl shadow-lg">
-                <h2 class="text-xl font-bold mb-4 border-b pb-2">Simulation Controls</h2>
-                <div id="calculator-controls" class="space-y-6">
-                    <div>
-                        <label for="dose-amount" class="block text-sm font-medium text-gray-700">Dose Amount: <span id="dose-amount-value" class="font-bold">2.5 mg</span></label>
-                        <input type="range" id="dose-amount" min="1" max="15" value="2.5" step="0.1" class="mt-2 w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-                    </div>
-                    <div>
-                        <label for="dose-interval" class="block text-sm font-medium text-gray-700">Dosing Interval: <span id="dose-interval-value" class="font-bold">7 days</span></label>
-                        <input type="range" id="dose-interval" min="1" max="14" value="7" step="1" class="mt-2 w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-                    </div>
-                    <div>
-                        <label for="simulation-days" class="block text-sm font-medium text-gray-700">Simulation Length (days)</label>
-                        <input type="number" id="simulation-days" value="60" step="1" min="30" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
-                    </div>
-                    <div class="text-xs text-gray-500 pt-2 border-t">
-                        <p><strong>Model Parameters (Mounjaro®):</strong></p>
-                        <p>Elimination Half-Life: 5 days</p>
-                        <p>Absorption Rate: ~50% of depot/day</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Results and Chart -->
-            <div class="md:col-span-2 bg-white p-6 rounded-2xl shadow-lg">
+        <!-- Main Content: Flex column on mobile, grid on desktop -->
+        <div class="flex flex-col md:grid md:grid-cols-3 md:gap-8 space-y-8 md:space-y-0">
+            
+            <!-- Chart and Results (Order 1 on mobile) -->
+            <div class="md:col-span-2 bg-white p-6 rounded-2xl shadow-lg order-1 md:order-2">
                 <div class="mb-6">
                     <h2 class="text-xl font-bold mb-4 border-b pb-2">Steady-State Results</h2>
                     <div id="results" class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-center">
@@ -121,6 +99,39 @@
                     <canvas id="concentration-chart"></canvas>
                 </div>
             </div>
+
+            <!-- Controls (Order 2 on mobile) -->
+            <div class="md:col-span-1 bg-white p-6 rounded-2xl shadow-lg order-2 md:order-1">
+                <h2 class="text-xl font-bold mb-4 border-b pb-2">Simulation Controls</h2>
+                <div id="calculator-controls" class="space-y-6">
+                    <div>
+                        <label for="dose-amount" class="block text-sm font-medium text-gray-700">Dose Amount: <span id="dose-amount-value" class="font-bold">2.5 mg</span></label>
+                        <div class="flex items-center space-x-2 mt-2">
+                            <button id="dose-dec" class="px-3 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">-</button>
+                            <input type="range" id="dose-amount" min="1" max="15" value="2.5" step="0.1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            <button id="dose-inc" class="px-3 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">+</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="dose-interval" class="block text-sm font-medium text-gray-700">Dosing Interval: <span id="dose-interval-value" class="font-bold">7 days</span></label>
+                        <div class="flex items-center space-x-2 mt-2">
+                            <button id="interval-dec" class="px-3 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">-</button>
+                            <input type="range" id="dose-interval" min="1" max="14" value="7" step="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            <button id="interval-inc" class="px-3 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">+</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="simulation-days" class="block text-sm font-medium text-gray-700">Simulation Length (days)</label>
+                        <input type="number" id="simulation-days" value="60" step="1" min="30" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                    </div>
+                    <div class="text-xs text-gray-500 pt-2 border-t">
+                        <p><strong>Model Parameters (Mounjaro®):</strong></p>
+                        <p>Elimination Half-Life: 5 days</p>
+                        <p>Absorption Rate: ~50% of depot/day</p>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
         <!-- Explanations Section -->
@@ -130,8 +141,8 @@
                 <div class="space-y-4 text-gray-700">
                     <p>This calculator helps you visualize how different Mounjaro® dosing strategies might affect the total amount of the drug in your system over time. Simply adjust the sliders and inputs to see the chart update in real-time.</p>
                     <ul class="list-disc list-inside space-y-2">
-                        <li><strong>Dose Amount:</strong> Use the slider to set the amount (in mg) of each individual dose.</li>
-                        <li><strong>Dosing Interval:</strong> Use the slider to set the number of days between each dose.</li>
+                        <li><strong>Dose Amount:</strong> Use the slider or the `+` and `-` buttons to set the amount (in mg) of each individual dose.</li>
+                        <li><strong>Dosing Interval:</strong> Use the slider or the `+` and `-` buttons to set the number of days between each dose.</li>
                         <li><strong>Simulation Length:</strong> Set the total number of days you want the simulation to run for. A longer period (like 60-90 days) is better for seeing the drug reach a "steady state."</li>
                     </ul>
                     <p>The <strong>Steady-State Results</strong> show the peak (highest), trough (lowest), and average drug levels achieved during the last full dosing cycle of the simulation, which is when the drug levels have stabilized.</p>
@@ -174,6 +185,11 @@
         const peakLevelEl = document.getElementById('peak-level');
         const troughLevelEl = document.getElementById('trough-level');
         const averageLevelEl = document.getElementById('average-level');
+
+        const doseIncBtn = document.getElementById('dose-inc');
+        const doseDecBtn = document.getElementById('dose-dec');
+        const intervalIncBtn = document.getElementById('interval-inc');
+        const intervalDecBtn = document.getElementById('interval-dec');
         
         const ctx = document.getElementById('concentration-chart').getContext('2d');
         let concentrationChart;
@@ -187,7 +203,6 @@
             
             // --- Hard-coded Pharmacokinetic Parameters ---
             const eliminationHalfLife = 5; // days
-            // This rate aims to have the peak concentration ~2 days after injection
             const dailyAbsorptionFraction = 0.5; // 50% of the remaining drug at the injection site is absorbed each day
 
             // Validate inputs
@@ -195,47 +210,35 @@
                 return;
             }
             
-            // The decay factor for drug ELIMINATION from the system
             const dailyDecayFactor = Math.pow(0.5, 1 / eliminationHalfLife);
 
-            let depotMass = 0; // Drug at the injection site, waiting to be absorbed
-            let systemMass = 0; // Drug active in the system
+            let depotMass = 0;
+            let systemMass = 0;
             
             const systemMassData = [];
             const labels = [];
 
             // --- Simulation Loop ---
-            // The value for a given day represents the state at the START of that day.
             for (let day = 0; day <= simulationDays; day++) {
-                // 1. Store the current system mass for the chart. This ensures Day 0 starts at 0.
                 labels.push(`Day ${day}`);
                 systemMassData.push(systemMass);
 
-                // 2. Add new dose to the depot on dosing days
-                if (day > 0 && day % doseInterval === 0) { // Start dosing on the first interval, not day 0
-                    depotMass += doseAmount;
-                }
-                if (day === 0) { // First dose on day 0
+                if (day % doseInterval === 0) {
                     depotMass += doseAmount;
                 }
 
-
-                // 3. Absorb drug from depot into the system
                 const absorbedAmount = depotMass * dailyAbsorptionFraction;
                 depotMass -= absorbedAmount;
                 systemMass += absorbedAmount;
 
-                // 4. Eliminate drug from the system
                 systemMass *= dailyDecayFactor;
             }
             
             // --- Calculate Steady-State Metrics ---
-            // We assume steady state is reached in the last full dosing cycle
             const lastDoseDay = Math.floor((simulationDays - 1) / doseInterval) * doseInterval;
             
-            if (lastDoseDay > doseInterval) { // Ensure we have at least one full previous cycle
+            if (lastDoseDay > doseInterval) {
                 const steadyStateStartIndex = lastDoseDay - doseInterval;
-                // We use slice(start, end + 1) to include the last day of the cycle for accurate peak/trough
                 const lastFullCycleData = systemMassData.slice(steadyStateStartIndex, lastDoseDay + 1);
 
                 const peak = Math.max(...lastFullCycleData);
@@ -244,7 +247,6 @@
 
                 updateResults(peak, trough, average);
             } else {
-                 // Not enough data for a steady-state calculation
                  updateResults(0, 0, 0);
             }
 
@@ -305,7 +307,7 @@
                         }
                     },
                     animation: {
-                        duration: 0 // Disable animation for real-time updates
+                        duration: 0
                     }
                 }
             });
@@ -317,17 +319,31 @@
         }
 
         // --- Event Listeners ---
-        doseAmountSlider.addEventListener('input', () => {
+        function handleSliderChange() {
             updateSliderLabels();
             runSimulation();
-        });
+        }
 
-        doseIntervalSlider.addEventListener('input', () => {
-            updateSliderLabels();
-            runSimulation();
-        });
-        
+        doseAmountSlider.addEventListener('input', handleSliderChange);
+        doseIntervalSlider.addEventListener('input', handleSliderChange);
         simulationDaysInput.addEventListener('change', runSimulation);
+
+        doseIncBtn.addEventListener('click', () => {
+            doseAmountSlider.stepUp();
+            handleSliderChange();
+        });
+        doseDecBtn.addEventListener('click', () => {
+            doseAmountSlider.stepDown();
+            handleSliderChange();
+        });
+        intervalIncBtn.addEventListener('click', () => {
+            doseIntervalSlider.stepUp();
+            handleSliderChange();
+        });
+        intervalDecBtn.addEventListener('click', () => {
+            doseIntervalSlider.stepDown();
+            handleSliderChange();
+        });
 
         // --- Initial Setup ---
         window.onload = () => {
