@@ -105,6 +105,13 @@
                 <h2 class="text-xl font-bold mb-4 border-b pb-2">Simulation Controls</h2>
                 <div id="calculator-controls" class="space-y-6">
                     <div>
+                        <label for="model-selector" class="block text-sm font-medium text-gray-700">Pharmacokinetic Model</label>
+                        <select id="model-selector" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                            <option value="2-comp">Two-Compartment (Accurate)</option>
+                            <option value="1-comp">One-Compartment (Simple)</option>
+                        </select>
+                    </div>
+                    <div>
                         <label for="dose-amount" class="block text-sm font-medium text-gray-700">Dose Amount: <span id="dose-amount-value" class="font-bold">2.5 mg</span></label>
                         <div class="flex items-center space-x-2 mt-2">
                             <button id="dose-dec" class="px-3 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">-</button>
@@ -124,10 +131,6 @@
                         <label for="simulation-days" class="block text-sm font-medium text-gray-700">Simulation Length (days)</label>
                         <input type="number" id="simulation-days" value="60" step="1" min="30" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
                     </div>
-                    <div class="text-xs text-gray-500 pt-2 border-t">
-                        <p><strong>Model:</strong> 2-Compartment PK</p>
-                        <p>Parameters based on clinical trial data for Tirzepatide.</p>
-                    </div>
                 </div>
             </div>
 
@@ -140,6 +143,7 @@
                 <div class="space-y-4 text-gray-700">
                     <p>This calculator helps you visualize how different Mounjaro® dosing strategies might affect the total amount of the drug in your system over time. Simply adjust the sliders and inputs to see the chart update in real-time.</p>
                     <ul class="list-disc list-inside space-y-2">
+                        <li><strong>Pharmacokinetic Model:</strong> Select the scientific model to use for the simulation. The Two-Compartment model is recommended for the most accurate results based on public data.</li>
                         <li><strong>Dose Amount:</strong> Use the slider or the `+` and `-` buttons to set the amount (in mg) of each individual dose.</li>
                         <li><strong>Dosing Interval:</strong> Use the slider or the `+` and `-` buttons to set the number of days between each dose.</li>
                         <li><strong>Simulation Length:</strong> Set the total number of days you want the simulation to run for. A longer period (like 60-90 days) is better for seeing the drug reach a "steady state."</li>
@@ -150,20 +154,8 @@
 
             <div class="bg-white p-6 rounded-2xl shadow-lg">
                 <h2 class="text-2xl font-bold mb-4 text-gray-800">How the Calculation Works</h2>
-                <div class="space-y-4 text-gray-700">
-                    <p>This tool uses an advanced **two-compartment pharmacokinetic model** based on published clinical data for Tirzepatide (Urva, et al., 2023). The simulation runs on an hourly basis to provide a more accurate curve.</p>
-                    <p>The model tracks the drug in three distinct "compartments":</p>
-                    <ol class="list-decimal list-inside space-y-2">
-                        <li><strong>Depot Compartment:</strong> After a subcutaneous injection, the drug sits in a "depot" under the skin.</li>
-                        <li><strong>Central Compartment:</strong> The drug is gradually absorbed from the depot into the central compartment, which represents the blood plasma and highly perfused organs.</li>
-                        <li><strong>Peripheral Compartment:</strong> From the blood, the drug distributes into the peripheral compartment, representing other body tissues. It can also move back from the tissues into the blood.</li>
-                    </ol>
-                    <p>Drug elimination (clearance) only occurs from the central (blood) compartment. This more complex model provides a more realistic simulation of drug absorption, distribution, and elimination compared to a simple half-life model.</p>
-                    <h3 class="text-lg font-semibold pt-2">Key Assumptions</h3>
-                    <ul class="list-disc list-inside space-y-2">
-                        <li><strong>Population Data:</strong> The model uses average pharmacokinetic parameters (absorption rate, clearance, compartment volumes) from the published study.</li>
-                        <li><strong>No Individual Variation:</strong> The simulation does not account for individual factors like body weight, metabolism, or organ function, which can all affect drug levels in the real world.</li>
-                    </ul>
+                <div id="explanation-content" class="space-y-4 text-gray-700">
+                    <!-- Content will be dynamically inserted here by JavaScript -->
                 </div>
             </div>
         </div>
@@ -172,6 +164,7 @@
 
     <script>
         // --- DOM Element References ---
+        const modelSelector = document.getElementById('model-selector');
         const doseAmountSlider = document.getElementById('dose-amount');
         const doseIntervalSlider = document.getElementById('dose-interval');
         const simulationDaysInput = document.getElementById('simulation-days');
@@ -191,87 +184,140 @@
         const ctx = document.getElementById('concentration-chart').getContext('2d');
         let concentrationChart;
 
+        // --- Model Explanations ---
+        const explanations = {
+            "1-comp": `
+                <p>This tool uses a simple <strong>one-compartment model</strong>. The simulation runs on a daily basis.</p>
+                <p>The model tracks the drug in two places:</p>
+                <ol class="list-decimal list-inside space-y-2">
+                    <li><strong>Depot:</strong> After injection, the drug sits in a depot under the skin and is slowly absorbed.</li>
+                    <li><strong>System:</strong> The drug is absorbed into the "system," which represents the entire body as a single unit. The drug is then eliminated from this system based on its half-life.</li>
+                </ol>
+                <h3 class="text-lg font-semibold pt-2">Key Assumptions</h3>
+                <ul class="list-disc list-inside space-y-2">
+                    <li><strong>Fixed Half-Life:</strong> The elimination half-life is fixed at 5 days.</li>
+                    <li><strong>Fixed Absorption Rate:</strong> The model assumes about 50% of the drug in the depot is absorbed each day.</li>
+                    <li><strong>Single Compartment:</strong> The body is treated as one uniform container. This model does not distinguish between blood and other body tissues.</li>
+                </ul>`,
+            "2-comp": `
+                <p>This tool uses an advanced <strong>two-compartment pharmacokinetic model</strong>. Recent research (Kjellsson, et al., 2024) confirms that Tirzepatide exhibits linear pharmacokinetics, making this model the most accurate representation for the drug's behavior in the body.</p>
+                <p>The model tracks the drug in three distinct "compartments":</p>
+                <ol class="list-decimal list-inside space-y-2">
+                    <li><strong>Depot Compartment:</strong> After a subcutaneous injection, the drug sits in a "depot" under the skin.</li>
+                    <li><strong>Central Compartment:</strong> The drug is gradually absorbed from the depot into the central compartment, which represents the blood plasma and highly perfused organs.</li>
+                    <li><strong>Peripheral Compartment:</strong> From the blood, the drug distributes into the peripheral compartment, representing other body tissues. It can also move back from the tissues into the blood.</li>
+                </ol>
+                <p>Drug elimination (clearance) only occurs from the central (blood) compartment. The parameters used are based on published clinical data (Urva, et al., 2023).</p>
+                <h3 class="text-lg font-semibold pt-2">Key Assumptions</h3>
+                <ul class="list-disc list-inside space-y-2">
+                    <li><strong>Population Data:</strong> The model uses average pharmacokinetic parameters (absorption rate, clearance, compartment volumes) from published studies.</li>
+                    <li><strong>No Individual Variation:</strong> The simulation does not account for individual factors like body weight or metabolism.</li>
+                </ul>`
+        };
+
         // --- Main Calculation Logic ---
         function runSimulation() {
-            // Get inputs from controls
+            const model = modelSelector.value;
+            switch(model) {
+                case '1-comp':
+                    runOneCompartmentSim();
+                    break;
+                case '2-comp':
+                    runTwoCompartmentSim();
+                    break;
+            }
+            updateExplanation();
+        }
+
+        function getCommonInputs() {
             const doseAmount = parseFloat(doseAmountSlider.value);
             const doseIntervalDays = parseInt(doseIntervalSlider.value);
             const simulationDays = parseInt(simulationDaysInput.value);
-            
-            // --- Two-Compartment Model Parameters for Tirzepatide ---
-            // Source: Urva, S., O'Farrell, C., et al. (2023). Population pharmacokinetics of the GIP/GLP‐1 receptor agonist tirzepatide.
-            // CPT: Pharmacometrics & Systems Pharmacology, 12(6), 835-846. DOI: 10.1002/psp4.13099
-            const ka = 0.0374; // Absorption rate constant (per hour)
-            const CL = 0.0636; // Apparent clearance (L/hour)
-            const Vc = 5.77;   // Apparent volume of central compartment (L)
-            const Q = 0.0475;  // Apparent inter-compartmental clearance (L/hour)
-            const Vp = 3.95;   // Apparent volume of peripheral compartment (L)
-
-            // Validate inputs
             if (isNaN(doseAmount) || isNaN(doseIntervalDays) || isNaN(simulationDays) || doseAmount <= 0 || doseIntervalDays <= 0 || simulationDays <= 0) {
-                return;
+                return null;
             }
-            
-            let depotMass = 0;      // mg
-            let centralMass = 0;    // mg
-            let peripheralMass = 0; // mg
+            return { doseAmount, doseIntervalDays, simulationDays };
+        }
 
+        function runOneCompartmentSim() {
+            const inputs = getCommonInputs();
+            if (!inputs) return;
+            const { doseAmount, doseIntervalDays, simulationDays } = inputs;
+
+            const eliminationHalfLife = 5;
+            const dailyAbsorptionFraction = 0.5;
+            const dailyDecayFactor = Math.pow(0.5, 1 / eliminationHalfLife);
+
+            let depotMass = 0;
+            let systemMass = 0;
+            const systemMassData = [];
+            const labels = [];
+
+            for (let day = 0; day <= simulationDays; day++) {
+                labels.push(`Day ${day}`);
+                systemMassData.push(systemMass);
+
+                if (day % doseIntervalDays === 0) {
+                    depotMass += doseAmount;
+                }
+                const absorbedAmount = depotMass * dailyAbsorptionFraction;
+                depotMass -= absorbedAmount;
+                systemMass += absorbedAmount;
+                systemMass *= dailyDecayFactor;
+            }
+            finalizeSimulation(systemMassData, labels, simulationDays, doseIntervalDays);
+        }
+
+        function runTwoCompartmentSim() {
+            const inputs = getCommonInputs();
+            if (!inputs) return;
+            const { doseAmount, doseIntervalDays, simulationDays } = inputs;
+
+            const ka = 0.0374, CL = 0.0636, Vc = 5.77, Q = 0.0475, Vp = 3.95;
+            
+            let depotMass = 0, centralMass = 0, peripheralMass = 0;
             const totalHours = simulationDays * 24;
             const doseIntervalHours = doseIntervalDays * 24;
-            
             const dailySystemMassData = [];
             const labels = [];
 
-            // --- Hourly Simulation Loop ---
             for (let hour = 0; hour <= totalHours; hour++) {
-                // On the first hour of a day, record the data for the chart
                 if (hour % 24 === 0) {
                     labels.push(`Day ${hour / 24}`);
                     dailySystemMassData.push(centralMass + peripheralMass);
                 }
-
-                // Add new dose to the depot on dosing hours
-                if (hour > 0 && hour % doseIntervalHours === 0) {
+                if (hour % doseIntervalHours === 0) {
                     depotMass += doseAmount;
                 }
-                 if (hour === 0) { // First dose
-                    depotMass += doseAmount;
-                }
-
-                // Calculate mass transfer for this hour
                 const absorptionAmount = depotMass * ka;
                 const eliminationAmount = (centralMass / Vc) * CL;
                 const transferToPeripheral = (centralMass / Vc) * Q;
                 const transferToCentral = (peripheralMass / Vp) * Q;
 
-                // Update compartment masses
                 depotMass -= absorptionAmount;
                 centralMass += absorptionAmount - eliminationAmount - transferToPeripheral + transferToCentral;
                 peripheralMass += transferToPeripheral - transferToCentral;
 
-                // Ensure masses don't go below zero due to floating point math
                 if (depotMass < 0) depotMass = 0;
                 if (centralMass < 0) centralMass = 0;
                 if (peripheralMass < 0) peripheralMass = 0;
             }
-            
-            // --- Calculate Steady-State Metrics from daily data ---
+            finalizeSimulation(dailySystemMassData, labels, simulationDays, doseIntervalDays);
+        }
+
+        function finalizeSimulation(data, labels, simulationDays, doseIntervalDays) {
             const lastDoseDay = Math.floor((simulationDays - 1) / doseIntervalDays) * doseIntervalDays;
-            
             if (lastDoseDay > doseIntervalDays) {
                 const steadyStateStartIndex = lastDoseDay - doseIntervalDays;
-                const lastFullCycleData = dailySystemMassData.slice(steadyStateStartIndex, lastDoseDay + 1);
-
+                const lastFullCycleData = data.slice(steadyStateStartIndex, lastDoseDay + 1);
                 const peak = Math.max(...lastFullCycleData);
                 const trough = Math.min(...lastFullCycleData);
                 const average = lastFullCycleData.reduce((a, b) => a + b, 0) / lastFullCycleData.length;
-
                 updateResults(peak, trough, average);
             } else {
-                 updateResults(0, 0, 0);
+                updateResults(0, 0, 0);
             }
-
-            updateChart(labels, dailySystemMassData);
+            updateChart(labels, data);
         }
 
         // --- Update UI Elements ---
@@ -303,33 +349,9 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Total Drug in System (mg)'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Time (Days)'
-                            }
-                        }
-                    },
-                    plugins: {
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false,
-                        },
-                        legend: {
-                            display: false
-                        }
-                    },
-                    animation: {
-                        duration: 0
-                    }
+                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Total Drug in System (mg)' } }, x: { title: { display: true, text: 'Time (Days)' } } },
+                    plugins: { tooltip: { mode: 'index', intersect: false }, legend: { display: false } },
+                    animation: { duration: 0 }
                 }
             });
         }
@@ -339,57 +361,42 @@
             doseIntervalValueEl.textContent = `${doseIntervalSlider.value} days`;
         }
 
+        function updateExplanation() {
+            const model = modelSelector.value;
+            document.getElementById('explanation-content').innerHTML = explanations[model];
+        }
+
         // --- Event Listeners and Persistence ---
-        function handleSliderChange() {
+        function handleControlChange() {
             updateSliderLabels();
-            // Save to session storage
+            sessionStorage.setItem('mounjaroModel', modelSelector.value);
             sessionStorage.setItem('mounjaroDose', doseAmountSlider.value);
             sessionStorage.setItem('mounjaroInterval', doseIntervalSlider.value);
+            sessionStorage.setItem('mounjaroSimDays', simulationDaysInput.value);
             runSimulation();
         }
-        
-        function handleInputChange() {
-             sessionStorage.setItem('mounjaroSimDays', simulationDaysInput.value);
-             runSimulation();
-        }
 
-        doseAmountSlider.addEventListener('input', handleSliderChange);
-        doseIntervalSlider.addEventListener('input', handleSliderChange);
-        simulationDaysInput.addEventListener('change', handleInputChange);
+        modelSelector.addEventListener('change', handleControlChange);
+        doseAmountSlider.addEventListener('input', handleControlChange);
+        doseIntervalSlider.addEventListener('input', handleControlChange);
+        simulationDaysInput.addEventListener('change', handleControlChange);
 
-        doseIncBtn.addEventListener('click', () => {
-            doseAmountSlider.stepUp();
-            handleSliderChange();
-        });
-        doseDecBtn.addEventListener('click', () => {
-            doseAmountSlider.stepDown();
-            handleSliderChange();
-        });
-        intervalIncBtn.addEventListener('click', () => {
-            doseIntervalSlider.stepUp();
-            handleSliderChange();
-        });
-        intervalDecBtn.addEventListener('click', () => {
-            doseIntervalSlider.stepDown();
-            handleSliderChange();
-        });
+        doseIncBtn.addEventListener('click', () => { doseAmountSlider.stepUp(); handleControlChange(); });
+        doseDecBtn.addEventListener('click', () => { doseAmountSlider.stepDown(); handleControlChange(); });
+        intervalIncBtn.addEventListener('click', () => { doseIntervalSlider.stepUp(); handleControlChange(); });
+        intervalDecBtn.addEventListener('click', () => { doseIntervalSlider.stepDown(); handleControlChange(); });
 
         // --- Initial Setup ---
         window.onload = () => {
-            // Load values from session storage if they exist
+            const storedModel = sessionStorage.getItem('mounjaroModel');
             const storedDose = sessionStorage.getItem('mounjaroDose');
             const storedInterval = sessionStorage.getItem('mounjaroInterval');
             const storedSimDays = sessionStorage.getItem('mounjaroSimDays');
 
-            if (storedDose) {
-                doseAmountSlider.value = storedDose;
-            }
-            if (storedInterval) {
-                doseIntervalSlider.value = storedInterval;
-            }
-            if (storedSimDays) {
-                simulationDaysInput.value = storedSimDays;
-            }
+            if (storedModel) modelSelector.value = storedModel;
+            if (storedDose) doseAmountSlider.value = storedDose;
+            if (storedInterval) doseIntervalSlider.value = storedInterval;
+            if (storedSimDays) simulationDaysInput.value = storedSimDays;
 
             updateSliderLabels();
             runSimulation();
