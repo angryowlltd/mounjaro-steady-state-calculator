@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mounjaro® Dosing Steady-State Calculator</title>
+    <title>Mounjaro® Dosing Schedule Calculator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -16,209 +16,192 @@
             background-color: #fffbeb; /* amber-50 */
             color: #b45309; /* amber-700 */
         }
-        /* Custom slider styles */
-        input[type=range] {
-            -webkit-appearance: none;
-            width: 100%;
-            background: transparent;
-        }
-        input[type=range]:focus {
-            outline: none;
-        }
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 8px;
-            cursor: pointer;
-            background: #e5e7eb; /* gray-200 */
-            border-radius: 5px;
-        }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 20px;
-            width: 20px;
-            border-radius: 50%;
-            background: #4f46e5; /* indigo-600 */
-            cursor: pointer;
-            margin-top: -6px; /* Center thumb on track */
-        }
-        input[type=range]::-moz-range-track {
-            width: 100%;
-            height: 8px;
-            cursor: pointer;
-            background: #e5e7eb;
-            border-radius: 5px;
-        }
-        input[type=range]::-moz-range-thumb {
-            height: 20px;
-            width: 20px;
-            border-radius: 50%;
-            background: #4f46e5;
-            cursor: pointer;
-            border: none;
+        #dosing-plan-body tr:nth-child(even) {
+            background-color: #f9fafb; /* gray-50 */
         }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
 
-    <div class="container mx-auto p-4 md:p-8 max-w-6xl">
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
 
         <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Mounjaro® Dosing Steady-State Calculator</h1>
-            <p class="text-gray-600 mt-2">Visualize Mounjaro® (Tirzepatide) levels over time.</p>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Mounjaro® Dosing Schedule Calculator</h1>
+            <p class="text-gray-600 mt-2">Model complex titration, tapering, and split-dosing schedules.</p>
         </header>
 
         <!-- Disclaimer -->
         <div class="disclaimer p-4 rounded-md mb-8" role="alert">
             <h3 class="font-bold text-lg">Important Medical Disclaimer</h3>
-            <p class="mt-1">This tool is for educational and informational purposes ONLY. It is a simplified model and does not represent real physiological processes. The results are not medical advice. <strong class="font-semibold">ALWAYS consult with a qualified healthcare professional</strong> before making any decisions about your medication or treatment plan. Do not use this tool to self-medicate or adjust your dosage.</p>
+            <p class="mt-1">This tool is for educational purposes ONLY. It is a simplified model and not medical advice. <strong class="font-semibold">ALWAYS consult with a qualified healthcare professional</strong> before making decisions about your medication.</p>
         </div>
 
-        <!-- Main Content: Flex column on mobile, grid on desktop -->
-        <div class="flex flex-col md:grid md:grid-cols-3 md:gap-8 space-y-8 md:space-y-0">
+        <!-- How to Use (Collapsible) -->
+        <details class="bg-white rounded-2xl shadow-lg p-6 mb-8 cursor-pointer">
+            <summary class="font-bold text-xl">How to Use This Tool</summary>
+            <div class="mt-4 space-y-4 text-gray-700 border-t pt-4">
+                <p>This calculator helps you visualize how custom Mounjaro® dosing strategies might affect drug levels over time. Adjust the setup and your dosing plan to see the chart update instantly.</p>
+                <ul class="list-disc list-inside space-y-2">
+                    <li><strong>Dosing Plan:</strong> Use the "Add Dose Event" button to create your schedule. You can specify the exact day and dose for each injection to model titration, tapering, or split doses.</li>
+                    <li><strong>Schedule Templates:</strong> Use the template buttons to quickly generate common dosing schedules, like a standard 12-week titration.</li>
+                    <li><strong>Simulation Controls:</strong> Choose the pharmacokinetic model and set the total length of the simulation. You can also toggle whether the final dose in your plan should be continued weekly for the remainder of the simulation.</li>
+                    <li><strong>Save & Share:</strong> Use the buttons to save your plan to your browser for your next visit or to generate a unique link to share your exact simulation with others.</li>
+                </ul>
+            </div>
+        </details>
+
+
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
             
-            <!-- Chart and Results (Order 1 on mobile) -->
-            <div class="md:col-span-2 bg-white p-6 rounded-2xl shadow-lg order-1 md:order-2">
-                <div class="mb-6">
-                    <h2 class="text-xl font-bold mb-4 border-b pb-2">Steady-State Results</h2>
-                    <div id="results" class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-center">
+            <!-- Left Column: Controls & Dosing Plan -->
+            <div class="lg:col-span-2 space-y-8">
+                <div class="bg-white p-6 rounded-2xl shadow-lg">
+                    <h2 class="text-xl font-bold mb-4 border-b pb-2">Simulation Setup</h2>
+                    <div class="space-y-4">
                         <div>
-                            <p class="text-sm text-gray-500">Peak Level</p>
-                            <p id="peak-level" class="text-2xl font-bold text-green-600">- mg</p>
+                            <label for="model-selector" class="block text-sm font-medium text-gray-700">Pharmacokinetic Model</label>
+                            <select id="model-selector" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                                <option value="2-comp">Two-Compartment (Accurate)</option>
+                                <option value="1-comp">One-Compartment (Simple)</option>
+                            </select>
                         </div>
                         <div>
-                            <p class="text-sm text-gray-500">Trough Level</p>
-                            <p id="trough-level" class="text-2xl font-bold text-red-600">- mg</p>
+                            <label for="simulation-days" class="block text-sm font-medium text-gray-700">Simulation Length (days)</label>
+                            <input type="number" id="simulation-days" value="90" step="1" min="30" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
                         </div>
-                        <div class="col-span-2 sm:col-span-1">
-                            <p class="text-sm text-gray-500">Average Level</p>
-                            <p id="average-level" class="text-2xl font-bold text-blue-600">- mg</p>
+                        <div class="flex items-center justify-between pt-2">
+                            <span class="text-sm font-medium text-gray-700">Continue last dose weekly</span>
+                            <label for="continue-dosing-toggle" class="inline-flex relative items-center cursor-pointer">
+                                <input type="checkbox" id="continue-dosing-toggle" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-indigo-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            </label>
                         </div>
                     </div>
                 </div>
-                <div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-lg">
+                    <h2 class="text-xl font-bold mb-4 border-b pb-2">Dosing Plan</h2>
+                    
+                    <!-- Templates -->
+                    <div class="mb-4">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">Schedule Templates</h3>
+                        <div class="flex flex-wrap gap-2">
+                             <button id="template-titration" class="text-xs bg-blue-100 text-blue-800 px-3 py-1 rounded-full hover:bg-blue-200">Standard Titration</button>
+                             <button id="template-weekly" class="text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full hover:bg-green-200">Weekly Dose Helper</button>
+                             <button id="template-clear" class="text-xs bg-red-100 text-red-800 px-3 py-1 rounded-full hover:bg-red-200">Clear Plan</button>
+                        </div>
+                    </div>
+
+                    <!-- Dosing Table -->
+                    <div class="max-h-96 overflow-y-auto pr-2">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0">
+                                <tr>
+                                    <th scope="col" class="px-4 py-2">Day</th>
+                                    <th scope="col" class="px-4 py-2">Dose (mg)</th>
+                                    <th scope="col" class="px-4 py-2 w-10"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="dosing-plan-body">
+                                <!-- Rows will be injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                     <button id="add-dose" class="mt-4 w-full bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Add Dose Event</button>
+                </div>
+                 <div class="bg-white p-6 rounded-2xl shadow-lg">
+                    <h2 class="text-xl font-bold mb-4 border-b pb-2">Save & Share</h2>
+                    <div class="flex flex-wrap gap-2">
+                        <button id="save-plan" class="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300">Save to Browser</button>
+                        <button id="copy-link" class="flex-1 bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-gray-900">Copy Share Link</button>
+                    </div>
+                    <p id="copy-link-feedback" class="text-xs text-green-600 mt-2 h-4"></p>
+                </div>
+            </div>
+
+            <!-- Right Column: Chart -->
+            <div class="lg:col-span-3 bg-white p-6 rounded-2xl shadow-lg">
+                <div class="relative h-96 md:h-[500px]">
                     <canvas id="concentration-chart"></canvas>
                 </div>
-            </div>
-
-            <!-- Controls (Order 2 on mobile) -->
-            <div class="md:col-span-1 bg-white p-6 rounded-2xl shadow-lg order-2 md:order-1">
-                <h2 class="text-xl font-bold mb-4 border-b pb-2">Simulation Controls</h2>
-                <div id="calculator-controls" class="space-y-6">
-                    <div>
-                        <label for="model-selector" class="block text-sm font-medium text-gray-700">Pharmacokinetic Model</label>
-                        <select id="model-selector" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
-                            <option value="2-comp">Two-Compartment (Accurate)</option>
-                            <option value="1-comp">One-Compartment (Simple)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="dose-amount" class="block text-sm font-medium text-gray-700">Dose Amount: <span id="dose-amount-value" class="font-bold">2.5 mg</span></label>
-                        <div class="flex items-center space-x-2 mt-2">
-                            <button id="dose-dec" class="px-3 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">-</button>
-                            <input type="range" id="dose-amount" min="1" max="15" value="2.5" step="0.1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-                            <button id="dose-inc" class="px-3 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">+</button>
-                        </div>
-                    </div>
-                    <div>
-                        <label for="dose-interval" class="block text-sm font-medium text-gray-700">Dosing Interval: <span id="dose-interval-value" class="font-bold">7 days</span></label>
-                        <div class="flex items-center space-x-2 mt-2">
-                            <button id="interval-dec" class="px-3 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">-</button>
-                            <input type="range" id="dose-interval" min="1" max="14" value="7" step="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-                            <button id="interval-inc" class="px-3 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">+</button>
-                        </div>
-                    </div>
-                    <div>
-                        <label for="simulation-days" class="block text-sm font-medium text-gray-700">Simulation Length (days)</label>
-                        <input type="number" id="simulation-days" value="60" step="1" min="30" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
-                    </div>
-                </div>
+                 <div class="mt-8">
+                     <h2 class="text-xl font-bold mb-4 border-b pb-2">How the Calculation Works</h2>
+                     <div id="explanation-content" class="space-y-4 text-gray-700"></div>
+                 </div>
             </div>
 
         </div>
+    </div>
 
-        <!-- Explanations Section -->
-        <div class="mt-8 space-y-8">
-            <div class="bg-white p-6 rounded-2xl shadow-lg">
-                <h2 class="text-2xl font-bold mb-4 text-gray-800">How to Use This Tool</h2>
-                <div class="space-y-4 text-gray-700">
-                    <p>This calculator helps you visualize how different Mounjaro® dosing strategies might affect the total amount of the drug in your system over time. Simply adjust the sliders and inputs to see the chart update in real-time.</p>
-                    <ul class="list-disc list-inside space-y-2">
-                        <li><strong>Pharmacokinetic Model:</strong> Select the scientific model to use for the simulation. The Two-Compartment model is recommended for the most accurate results based on public data.</li>
-                        <li><strong>Dose Amount:</strong> Use the slider or the `+` and `-` buttons to set the amount (in mg) of each individual dose.</li>
-                        <li><strong>Dosing Interval:</strong> Use the slider or the `+` and `-` buttons to set the number of days between each dose.</li>
-                        <li><strong>Simulation Length:</strong> Set the total number of days you want the simulation to run for. A longer period (like 60-90 days) is better for seeing the drug reach a "steady state."</li>
-                    </ul>
-                    <p>The <strong>Steady-State Results</strong> show the peak (highest), trough (lowest), and average drug levels achieved during the last full dosing cycle of the simulation, which is when the drug levels have stabilized.</p>
+    <!-- Weekly Dose Helper Modal -->
+    <div id="weekly-dose-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center hidden">
+        <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-sm">
+            <h3 class="text-lg font-bold mb-4">Weekly Dose Helper</h3>
+            <div class="space-y-4">
+                <div>
+                    <label for="weekly-dose-amount" class="block text-sm font-medium text-gray-700">Dose Amount (mg)</label>
+                    <input type="number" id="weekly-dose-amount" value="2.5" step="0.1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                </div>
+                <div>
+                    <label for="weekly-dose-weeks" class="block text-sm font-medium text-gray-700">Number of Weeks</label>
+                    <input type="number" id="weekly-dose-weeks" value="4" step="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
                 </div>
             </div>
-
-            <div class="bg-white p-6 rounded-2xl shadow-lg">
-                <h2 class="text-2xl font-bold mb-4 text-gray-800">How the Calculation Works</h2>
-                <div id="explanation-content" class="space-y-4 text-gray-700">
-                    <!-- Content will be dynamically inserted here by JavaScript -->
-                </div>
+            <div class="mt-6 flex justify-end space-x-4">
+                <button id="modal-cancel" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300">Cancel</button>
+                <button id="modal-add" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Add Doses</button>
             </div>
         </div>
-
     </div>
 
     <script>
-        // --- DOM Element References ---
-        const modelSelector = document.getElementById('model-selector');
-        const doseAmountSlider = document.getElementById('dose-amount');
-        const doseIntervalSlider = document.getElementById('dose-interval');
-        const simulationDaysInput = document.getElementById('simulation-days');
-        
-        const doseAmountValueEl = document.getElementById('dose-amount-value');
-        const doseIntervalValueEl = document.getElementById('dose-interval-value');
-        
-        const peakLevelEl = document.getElementById('peak-level');
-        const troughLevelEl = document.getElementById('trough-level');
-        const averageLevelEl = document.getElementById('average-level');
+        // --- STATE MANAGEMENT ---
+        let state = {
+            dosingPlan: [],
+            simulationDays: 90,
+            model: '2-comp',
+            continueLastDose: false
+        };
 
-        const doseIncBtn = document.getElementById('dose-inc');
-        const doseDecBtn = document.getElementById('dose-dec');
-        const intervalIncBtn = document.getElementById('interval-inc');
-        const intervalDecBtn = document.getElementById('interval-dec');
-        
+        // --- DOM ELEMENT REFERENCES ---
+        const modelSelector = document.getElementById('model-selector');
+        const simulationDaysInput = document.getElementById('simulation-days');
+        const continueDosingToggle = document.getElementById('continue-dosing-toggle');
+        const dosingPlanBody = document.getElementById('dosing-plan-body');
+        const addDoseBtn = document.getElementById('add-dose');
+        const templateTitrationBtn = document.getElementById('template-titration');
+        const templateWeeklyBtn = document.getElementById('template-weekly');
+        const templateClearBtn = document.getElementById('template-clear');
+        const savePlanBtn = document.getElementById('save-plan');
+        const copyLinkBtn = document.getElementById('copy-link');
+        const copyLinkFeedbackEl = document.getElementById('copy-link-feedback');
+        const weeklyDoseModal = document.getElementById('weekly-dose-modal');
+        const modalAddBtn = document.getElementById('modal-add');
+        const modalCancelBtn = document.getElementById('modal-cancel');
+        const weeklyDoseAmountInput = document.getElementById('weekly-dose-amount');
+        const weeklyDoseWeeksInput = document.getElementById('weekly-dose-weeks');
         const ctx = document.getElementById('concentration-chart').getContext('2d');
         let concentrationChart;
 
-        // --- Model Explanations ---
         const explanations = {
-            "1-comp": `
-                <p>This tool uses a simple <strong>one-compartment model</strong>. The simulation runs on a daily basis.</p>
-                <p>The model tracks the drug in two places:</p>
-                <ol class="list-decimal list-inside space-y-2">
-                    <li><strong>Depot:</strong> After injection, the drug sits in a depot under the skin and is slowly absorbed.</li>
-                    <li><strong>System:</strong> The drug is absorbed into the "system," which represents the entire body as a single unit. The drug is then eliminated from this system based on its half-life.</li>
-                </ol>
-                <h3 class="text-lg font-semibold pt-2">Key Assumptions</h3>
-                <ul class="list-disc list-inside space-y-2">
-                    <li><strong>Fixed Half-Life:</strong> The elimination half-life is fixed at 5 days.</li>
-                    <li><strong>Fixed Absorption Rate:</strong> The model assumes about 50% of the drug in the depot is absorbed each day.</li>
-                    <li><strong>Single Compartment:</strong> The body is treated as one uniform container. This model does not distinguish between blood and other body tissues.</li>
-                </ul>`,
-            "2-comp": `
-                <p>This tool uses an advanced <strong>two-compartment pharmacokinetic model</strong>. Recent research (Kjellsson, et al., 2024) confirms that Tirzepatide exhibits linear pharmacokinetics, making this model the most accurate representation for the drug's behavior in the body.</p>
-                <p>The model tracks the drug in three distinct "compartments":</p>
-                <ol class="list-decimal list-inside space-y-2">
-                    <li><strong>Depot Compartment:</strong> After a subcutaneous injection, the drug sits in a "depot" under the skin.</li>
-                    <li><strong>Central Compartment:</strong> The drug is gradually absorbed from the depot into the central compartment, which represents the blood plasma and highly perfused organs.</li>
-                    <li><strong>Peripheral Compartment:</strong> From the blood, the drug distributes into the peripheral compartment, representing other body tissues. It can also move back from the tissues into the blood.</li>
-                </ol>
-                <p>Drug elimination (clearance) only occurs from the central (blood) compartment. The parameters used are based on published clinical data (Urva, et al., 2023).</p>
-                <h3 class="text-lg font-semibold pt-2">Key Assumptions</h3>
-                <ul class="list-disc list-inside space-y-2">
-                    <li><strong>Population Data:</strong> The model uses average pharmacokinetic parameters (absorption rate, clearance, compartment volumes) from published studies.</li>
-                    <li><strong>No Individual Variation:</strong> The simulation does not account for individual factors like body weight or metabolism.</li>
-                </ul>`
+            "1-comp": `<p>This tool uses a simple <strong>one-compartment model</strong>. The simulation runs on a daily basis.</p><p>The model tracks the drug in two places:</p><ol class="list-decimal list-inside space-y-2"><li><strong>Depot:</strong> After injection, the drug sits in a depot under the skin and is slowly absorbed.</li><li><strong>System:</strong> The drug is absorbed into the "system," which represents the entire body as a single unit. The drug is then eliminated from this system based on its half-life.</li></ol><h3 class="text-lg font-semibold pt-2">Key Assumptions</h3><ul class="list-disc list-inside space-y-2"><li><strong>Fixed Half-Life:</strong> The elimination half-life is fixed at 5 days.</li><li><strong>Fixed Absorption Rate:</strong> The model assumes about 50% of the drug in the depot is absorbed each day.</li><li><strong>Single Compartment:</strong> The body is treated as one uniform container. This model does not distinguish between blood and other body tissues.</li></ul>`,
+            "2-comp": `<p>This calculator uses an advanced <strong>two-compartment pharmacokinetic model</strong>. Research (Kjellsson, et al., 2024) confirms that Tirzepatide exhibits linear pharmacokinetics, making this model the most accurate representation for the drug's behavior.</p><p>The model tracks the drug in three distinct "compartments":</p><ol class="list-decimal list-inside space-y-2"><li><strong>Depot Compartment:</strong> After a subcutaneous injection, the drug sits in a "depot" under the skin.</li><li><strong>Central Compartment:</strong> The drug is gradually absorbed from the depot into the central compartment (blood plasma and highly perfused organs).</li><li><strong>Peripheral Compartment:</strong> From the blood, the drug distributes into the peripheral compartment (other body tissues).</li></ol><p>Drug elimination (clearance) only occurs from the central (blood) compartment. The parameters are based on published clinical data (Urva, et al., 2023).</p>`
         };
-
-        // --- Main Calculation Logic ---
+        
+        // --- CORE FUNCTIONS ---
+        function updateAndSimulate() {
+            state.dosingPlan = getDosesForSimulation(); 
+            state.simulationDays = parseInt(simulationDaysInput.value);
+            state.model = modelSelector.value;
+            state.continueLastDose = continueDosingToggle.checked;
+            runSimulation();
+        }
+        
         function runSimulation() {
-            const model = modelSelector.value;
-            switch(model) {
+            updateExplanation();
+            savePlanToStorage();
+            switch(state.model) {
                 case '1-comp':
                     runOneCompartmentSim();
                     break;
@@ -226,180 +209,348 @@
                     runTwoCompartmentSim();
                     break;
             }
-            updateExplanation();
         }
-
-        function getCommonInputs() {
-            const doseAmount = parseFloat(doseAmountSlider.value);
-            const doseIntervalDays = parseInt(doseIntervalSlider.value);
-            const simulationDays = parseInt(simulationDaysInput.value);
-            if (isNaN(doseAmount) || isNaN(doseIntervalDays) || isNaN(simulationDays) || doseAmount <= 0 || doseIntervalDays <= 0 || simulationDays <= 0) {
-                return null;
-            }
-            return { doseAmount, doseIntervalDays, simulationDays };
-        }
-
+        
+        // --- SIMULATION ENGINES ---
         function runOneCompartmentSim() {
-            const inputs = getCommonInputs();
-            if (!inputs) return;
-            const { doseAmount, doseIntervalDays, simulationDays } = inputs;
-
+            const { simulationDays, dosingPlan } = state;
+            
             const eliminationHalfLife = 5;
             const dailyAbsorptionFraction = 0.5;
             const dailyDecayFactor = Math.pow(0.5, 1 / eliminationHalfLife);
 
             let depotMass = 0;
             let systemMass = 0;
-            const systemMassData = [];
-            const labels = [];
+            const systemMassData = [0];
+            const labels = ['Day 0'];
 
-            for (let day = 0; day <= simulationDays; day++) {
-                labels.push(`Day ${day}`);
-                systemMassData.push(systemMass);
-
-                if (day % doseIntervalDays === 0) {
-                    depotMass += doseAmount;
+            for (let day = 0; day < simulationDays; day++) {
+                // Add dose at the start of the day
+                const dosesForToday = dosingPlan.filter(d => d.day === day);
+                if (dosesForToday.length > 0) {
+                    dosesForToday.forEach(d => depotMass += d.amount);
+                } else {
+                    const lastDose = dosingPlan.length > 0 ? dosingPlan.slice().sort((a,b) => b.day - a.day)[0] : null;
+                    if (state.continueLastDose && lastDose && day > lastDose.day && (day - lastDose.day) % 7 === 0) {
+                        depotMass += lastDose.amount;
+                    }
                 }
+                
+                // Simulate the events of the day
                 const absorbedAmount = depotMass * dailyAbsorptionFraction;
                 depotMass -= absorbedAmount;
                 systemMass += absorbedAmount;
                 systemMass *= dailyDecayFactor;
+
+                // Record the state at the END of the day
+                systemMassData.push(systemMass);
+                labels.push(`Day ${day + 1}`);
             }
-            finalizeSimulation(systemMassData, labels, simulationDays, doseIntervalDays);
+            finalizeSimulation(systemMassData, labels);
         }
 
         function runTwoCompartmentSim() {
-            const inputs = getCommonInputs();
-            if (!inputs) return;
-            const { doseAmount, doseIntervalDays, simulationDays } = inputs;
-
-            const ka = 0.0374, CL = 0.0636, Vc = 5.77, Q = 0.0475, Vp = 3.95;
+            const { simulationDays, dosingPlan } = state;
             
+            const ka = 0.0374, CL = 0.0636, Vc = 5.77, Q = 0.0475, Vp = 3.95;
             let depotMass = 0, centralMass = 0, peripheralMass = 0;
-            const totalHours = simulationDays * 24;
-            const doseIntervalHours = doseIntervalDays * 24;
-            const dailySystemMassData = [];
-            const labels = [];
+            const dailySystemMassData = [0];
+            const labels = ['Day 0'];
 
-            for (let hour = 0; hour <= totalHours; hour++) {
-                if (hour % 24 === 0) {
-                    labels.push(`Day ${hour / 24}`);
-                    dailySystemMassData.push(centralMass + peripheralMass);
+            for (let day = 0; day < simulationDays; day++) {
+                // Add any dose scheduled for the START of the current day
+                const dosesForToday = dosingPlan.filter(d => d.day === day);
+                if (dosesForToday.length > 0) {
+                    dosesForToday.forEach(d => depotMass += d.amount);
+                } else {
+                    const lastDose = dosingPlan.length > 0 ? dosingPlan.slice().sort((a,b) => b.day - a.day)[0] : null;
+                    if (state.continueLastDose && lastDose && day > lastDose.day && (day - lastDose.day) % 7 === 0) {
+                        depotMass += lastDose.amount;
+                    }
                 }
-                if (hour % doseIntervalHours === 0) {
-                    depotMass += doseAmount;
+
+                // Simulate the 24 hours of the day
+                for (let hour = 0; hour < 24; hour++) {
+                    const absorptionAmount = depotMass * ka;
+                    const eliminationAmount = (centralMass / Vc) * CL;
+                    const transferToPeripheral = (centralMass / Vc) * Q;
+                    const transferToCentral = (peripheralMass / Vp) * Q;
+
+                    depotMass -= absorptionAmount;
+                    centralMass += absorptionAmount - eliminationAmount - transferToPeripheral + transferToCentral;
+                    peripheralMass += transferToPeripheral - transferToCentral;
+
+                    if (depotMass < 0) depotMass = 0;
+                    if (centralMass < 0) centralMass = 0;
+                    if (peripheralMass < 0) peripheralMass = 0;
                 }
-                const absorptionAmount = depotMass * ka;
-                const eliminationAmount = (centralMass / Vc) * CL;
-                const transferToPeripheral = (centralMass / Vc) * Q;
-                const transferToCentral = (peripheralMass / Vp) * Q;
-
-                depotMass -= absorptionAmount;
-                centralMass += absorptionAmount - eliminationAmount - transferToPeripheral + transferToCentral;
-                peripheralMass += transferToPeripheral - transferToCentral;
-
-                if (depotMass < 0) depotMass = 0;
-                if (centralMass < 0) centralMass = 0;
-                if (peripheralMass < 0) peripheralMass = 0;
+                
+                // Record the state at the END of the day
+                dailySystemMassData.push(centralMass + peripheralMass);
+                labels.push(`Day ${day + 1}`);
             }
-            finalizeSimulation(dailySystemMassData, labels, simulationDays, doseIntervalDays);
+            finalizeSimulation(dailySystemMassData, labels);
         }
 
-        function finalizeSimulation(data, labels, simulationDays, doseIntervalDays) {
-            const lastDoseDay = Math.floor((simulationDays - 1) / doseIntervalDays) * doseIntervalDays;
-            if (lastDoseDay > doseIntervalDays) {
-                const steadyStateStartIndex = lastDoseDay - doseIntervalDays;
-                const lastFullCycleData = data.slice(steadyStateStartIndex, lastDoseDay + 1);
-                const peak = Math.max(...lastFullCycleData);
-                const trough = Math.min(...lastFullCycleData);
-                const average = lastFullCycleData.reduce((a, b) => a + b, 0) / lastFullCycleData.length;
-                updateResults(peak, trough, average);
-            } else {
-                updateResults(0, 0, 0);
+
+        function finalizeSimulation(data, labels) {
+            const movingAverageData = [];
+            // Pad the start with nulls so the average line starts after 7 days
+            for (let i = 0; i < 7; i++) {
+                movingAverageData.push(null);
             }
-            updateChart(labels, data);
+            // Calculate the moving average for the rest of the data
+            for (let i = 7; i < data.length; i++) {
+                const start = i - 6;
+                const window = data.slice(start, i + 1);
+                const avg = window.reduce((a, b) => a + b, 0) / 7; // Always divide by 7
+                movingAverageData.push(avg);
+            }
+            updateChart(labels, data, movingAverageData);
         }
 
-        // --- Update UI Elements ---
-        function updateResults(peak, trough, average) {
-            peakLevelEl.textContent = `${peak.toFixed(2)} mg`;
-            troughLevelEl.textContent = `${trough.toFixed(2)} mg`;
-            averageLevelEl.textContent = `${average.toFixed(2)} mg`;
+        // --- UI RENDERING & EVENT HANDLERS ---
+        function renderDosingPlan() {
+            dosingPlanBody.innerHTML = '';
+            state.dosingPlan.forEach((dose, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-4 py-2">
+                        <input type="number" value="${dose.day}" class="day-input w-full bg-transparent p-1 rounded border border-gray-200" data-index="${index}" min="0">
+                    </td>
+                    <td class="px-4 py-2">
+                        <input type="number" value="${dose.amount}" class="amount-input w-full bg-transparent p-1 rounded border border-gray-200" data-index="${index}" min="0" step="0.01">
+                    </td>
+                    <td class="px-4 py-2 text-center">
+                        <button class="remove-dose text-red-500 hover:text-red-700 font-bold" data-index="${index}">&times;</button>
+                    </td>
+                `;
+                dosingPlanBody.appendChild(tr);
+            });
+
+            dosingPlanBody.querySelectorAll('.day-input, .amount-input').forEach(input => {
+                input.addEventListener('change', updateAndSimulate);
+            });
+            dosingPlanBody.querySelectorAll('.remove-dose').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const index = parseInt(e.target.dataset.index);
+                    state.dosingPlan.splice(index, 1);
+                    renderDosingPlan();
+                    updateAndSimulate();
+                });
+            });
         }
 
-        function updateChart(labels, data) {
-            if (concentrationChart) {
-                concentrationChart.destroy();
-            }
-            concentrationChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Total Drug in System (mg)',
-                        data: data,
-                        borderColor: 'rgb(79, 70, 229)',
-                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                        borderWidth: 2,
-                        pointRadius: 0,
-                        tension: 0.1,
-                        fill: true,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Total Drug in System (mg)' } }, x: { title: { display: true, text: 'Time (Days)' } } },
-                    plugins: { tooltip: { mode: 'index', intersect: false }, legend: { display: false } },
-                    animation: { duration: 0 }
+        function getDosesForSimulation() {
+            const rows = dosingPlanBody.querySelectorAll('tr');
+            const plan = [];
+            rows.forEach(row => {
+                const dayInput = row.querySelector('.day-input');
+                const amountInput = row.querySelector('.amount-input');
+                const day = parseInt(dayInput.value);
+                const amount = parseFloat(amountInput.value);
+                if (!isNaN(day) && !isNaN(amount) && day >= 0 && amount >= 0) {
+                    plan.push({ day, amount });
                 }
+            });
+            plan.sort((a, b) => a.day - b.day);
+            state.dosingPlan = plan;
+            return plan;
+        }
+
+        function updateChart(labels, data, movingAverageData) {
+            if (concentrationChart) { concentrationChart.destroy(); }
+
+            const datasets = [{
+                label: 'Total Drug in System (mg)',
+                data: data,
+                borderColor: 'rgb(79, 70, 229)',
+                backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                borderWidth: 2,
+                pointRadius: 0,
+                pointHoverRadius: 6,
+                pointHoverBackgroundColor: 'rgb(79, 70, 229)',
+                pointHoverBorderColor: 'white',
+                pointHoverBorderWidth: 2,
+                tension: 0.1,
+                fill: true,
+                order: 2
+            }];
+
+            if (movingAverageData && movingAverageData.length > 0) {
+                 datasets.push({
+                    label: `7-Day Moving Average`,
+                    data: movingAverageData,
+                    borderColor: 'rgb(249, 115, 22)', // orange-500
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
+                    pointHoverBackgroundColor: 'rgb(249, 115, 22)', // orange-500
+                    pointHoverBorderColor: 'white',
+                    pointHoverBorderWidth: 2,
+                    borderDash: [5, 5],
+                    fill: false,
+                    order: 1
+                });
+            }
+
+            concentrationChart = new Chart(ctx, { 
+                type: 'line', 
+                data: { 
+                    labels: labels, 
+                    datasets: datasets 
+                }, 
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    scales: { 
+                        y: { beginAtZero: true, title: { display: true, text: 'Total Drug in System (mg)' } }, 
+                        x: { title: { display: true, text: 'Time (Days)' } } 
+                    },
+                    plugins: { 
+                        legend: { display: true, position: 'top' },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                        }
+                    },
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    animation: { duration: 0 } 
+                } 
             });
         }
         
-        function updateSliderLabels() {
-            doseAmountValueEl.textContent = `${parseFloat(doseAmountSlider.value).toFixed(1)} mg`;
-            doseIntervalValueEl.textContent = `${doseIntervalSlider.value} days`;
-        }
-
         function updateExplanation() {
             const model = modelSelector.value;
             document.getElementById('explanation-content').innerHTML = explanations[model];
         }
 
-        // --- Event Listeners and Persistence ---
-        function handleControlChange() {
-            updateSliderLabels();
-            sessionStorage.setItem('mounjaroModel', modelSelector.value);
-            sessionStorage.setItem('mounjaroDose', doseAmountSlider.value);
-            sessionStorage.setItem('mounjaroInterval', doseIntervalSlider.value);
-            sessionStorage.setItem('mounjaroSimDays', simulationDaysInput.value);
-            runSimulation();
+        // Event listeners for controls
+        modelSelector.addEventListener('change', updateAndSimulate);
+        simulationDaysInput.addEventListener('change', updateAndSimulate);
+        continueDosingToggle.addEventListener('change', updateAndSimulate);
+        addDoseBtn.addEventListener('click', () => {
+            const lastDose = state.dosingPlan.length > 0 ? state.dosingPlan[state.dosingPlan.length - 1] : { day: -7, amount: 2.5 };
+            state.dosingPlan.push({ day: lastDose.day + 7, amount: lastDose.amount });
+            renderDosingPlan();
+            updateAndSimulate();
+        });
+
+        // Template button listeners
+        templateTitrationBtn.addEventListener('click', () => {
+            state.dosingPlan = [
+                { day: 0, amount: 2.5 }, { day: 7, amount: 2.5 }, { day: 14, amount: 2.5 }, { day: 21, amount: 2.5 },
+                { day: 28, amount: 5 }, { day: 35, amount: 5 }, { day: 42, amount: 5 }, { day: 49, amount: 5 },
+                { day: 56, amount: 7.5 }, { day: 63, amount: 7.5 }, { day: 70, amount: 7.5 }, { day: 77, amount: 7.5 },
+            ];
+            state.continueLastDose = true;
+            continueDosingToggle.checked = true;
+            renderDosingPlan();
+            updateAndSimulate();
+        });
+
+        templateClearBtn.addEventListener('click', () => {
+            state.dosingPlan = [];
+            state.continueLastDose = false;
+            continueDosingToggle.checked = false;
+            renderDosingPlan();
+            updateAndSimulate();
+        });
+
+        // Modal logic
+        templateWeeklyBtn.addEventListener('click', () => weeklyDoseModal.classList.remove('hidden'));
+        modalCancelBtn.addEventListener('click', () => weeklyDoseModal.classList.add('hidden'));
+        modalAddBtn.addEventListener('click', () => {
+            const amount = parseFloat(weeklyDoseAmountInput.value);
+            const weeks = parseInt(weeklyDoseWeeksInput.value);
+            const lastDay = state.dosingPlan.length > 0 ? state.dosingPlan[state.dosingPlan.length - 1].day : -7;
+            if (!isNaN(amount) && !isNaN(weeks) && amount > 0 && weeks > 0) {
+                for(let i = 0; i < weeks; i++) {
+                    state.dosingPlan.push({ day: lastDay + 7 * (i + 1), amount: amount });
+                }
+            }
+            state.continueLastDose = true;
+            continueDosingToggle.checked = true;
+            renderDosingPlan();
+            updateAndSimulate();
+            weeklyDoseModal.classList.add('hidden');
+        });
+
+        // --- PERSISTENCE & SHARING ---
+        function savePlanToStorage() {
+            localStorage.setItem('mounjaroDosingPlan', JSON.stringify(state));
         }
 
-        modelSelector.addEventListener('change', handleControlChange);
-        doseAmountSlider.addEventListener('input', handleControlChange);
-        doseIntervalSlider.addEventListener('input', handleControlChange);
-        simulationDaysInput.addEventListener('change', handleControlChange);
+        savePlanBtn.addEventListener('click', () => {
+            savePlanToStorage();
+            copyLinkFeedbackEl.textContent = 'Plan saved to browser!';
+            setTimeout(() => { copyLinkFeedbackEl.textContent = ''; }, 2000);
+        });
 
-        doseIncBtn.addEventListener('click', () => { doseAmountSlider.stepUp(); handleControlChange(); });
-        doseDecBtn.addEventListener('click', () => { doseAmountSlider.stepDown(); handleControlChange(); });
-        intervalIncBtn.addEventListener('click', () => { doseIntervalSlider.stepUp(); handleControlChange(); });
-        intervalDecBtn.addEventListener('click', () => { doseIntervalSlider.stepDown(); handleControlChange(); });
+        function copyShareLink() {
+            const data = btoa(JSON.stringify(state));
+            const url = `${window.location.origin}${window.location.pathname}?plan=${data}`;
+            const textArea = document.createElement("textarea");
+            textArea.value = url;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                copyLinkFeedbackEl.textContent = 'Share link copied!';
+            } catch (err) {
+                copyLinkFeedbackEl.textContent = 'Failed to copy link.';
+            }
+            document.body.removeChild(textArea);
+            setTimeout(() => { copyLinkFeedbackEl.textContent = ''; }, 2000);
+        }
+
+        copyLinkBtn.addEventListener('click', copyShareLink);
+
+        function loadPlanFromStorageOrUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const planData = urlParams.get('plan');
+            let loadedState = null;
+            let planLoaded = false;
+
+            if (planData) {
+                try {
+                    loadedState = JSON.parse(atob(planData));
+                    planLoaded = true;
+                } catch (e) { console.error("Failed to parse plan from URL", e); }
+            } else {
+                const savedPlan = localStorage.getItem('mounjaroDosingPlan');
+                if (savedPlan) {
+                    try {
+                        loadedState = JSON.parse(savedPlan);
+                        planLoaded = true;
+                    } catch (e) { console.error("Failed to parse plan from localStorage", e); }
+                }
+            }
+            
+            if (loadedState) {
+                state = { ...state, ...loadedState };
+            }
+
+            // Default plan if nothing was loaded from URL or storage
+            if (!planLoaded) {
+                 state.dosingPlan.push({ day: 0, amount: 2.5 });
+                 state.continueLastDose = false;
+            }
+
+            simulationDaysInput.value = state.simulationDays;
+            modelSelector.value = state.model;
+            continueDosingToggle.checked = state.continueLastDose;
+            
+            renderDosingPlan();
+            updateAndSimulate();
+        }
 
         // --- Initial Setup ---
         window.onload = () => {
-            const storedModel = sessionStorage.getItem('mounjaroModel');
-            const storedDose = sessionStorage.getItem('mounjaroDose');
-            const storedInterval = sessionStorage.getItem('mounjaroInterval');
-            const storedSimDays = sessionStorage.getItem('mounjaroSimDays');
-
-            if (storedModel) modelSelector.value = storedModel;
-            if (storedDose) doseAmountSlider.value = storedDose;
-            if (storedInterval) doseIntervalSlider.value = storedInterval;
-            if (storedSimDays) simulationDaysInput.value = storedSimDays;
-
-            updateSliderLabels();
-            runSimulation();
+            loadPlanFromStorageOrUrl();
         };
 
     </script>
